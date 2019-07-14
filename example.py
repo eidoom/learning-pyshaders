@@ -1,68 +1,64 @@
 #!/usr/bin/env python3
 
 import pyglet
-import pyshaders
-from pyglet.gl import GL_POLYGON
 from pyglet.window import key
 
-frag = """
-#version 330 core
+import pyshaders
 
-out vec4 color_frag;
 
-uniform vec3 color = vec3(1.0, 1.0, 1.0);
+class Shape:
+    def __init__(self, a):
+        self.a = a
+        self.indices = (0, 1, 2)
+        self.vertices = ('v2f', (0, self.a,
+                                 self.a, -self.a,
+                                 -self.a, -self.a))
+        # self.colours = ('c3f', (1, 0, 0,
+        #                         0, 1, 0,
+        #                         0, 0, 1))
 
-void main()
-{
-  color_frag = vec4(color, 1.0);
-}
-"""
+        self.vertex_list = pyglet.graphics.vertex_list_indexed(3,
+                                                               self.indices,
+                                                               self.vertices
+                                                               )
 
-vert = """
-#version 330 core
+    def render(self):
+        self.vertex_list.draw(pyglet.gl.GL_TRIANGLES)
 
-layout(location = 0)in vec2 vert;
 
-void main()
-{
-  gl_Position = vec4(vert, 1, 1);
-}
-"""
+class MyWindow(pyglet.window.Window):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-window = pyglet.window.Window(width=512, height=512, resizable=True)
+        self.shape_1 = Shape(0.8)
+        # self.shape_2 = Shape(0.2)
 
-shader = pyshaders.from_string(vert, frag)
+    def on_draw(self):
+        self.clear()
+        self.shape_1.render()
+        # self.shape_2.render()
+
+    # def on_resize(self, width, height):
+    #     pyglet.gl.glViewport(0, 0, width, height)
+
+    def on_key_press(self, symbol, modifiers):
+        if symbol in colour_map.keys():
+            shader.uniforms.colour = colour_map[symbol]
+
+
+pyglet.gl.glClearColor(0, 0, 0, 0)
+
+w = 512
+h = w
+window = MyWindow(visible=True, width=w, height=h, resizable=True)
+
+shader = pyshaders.from_files_names("example.vert", "example.frag")
 shader.use()
 
-a = 0.9
+shader.uniforms.offset_x = 0.1
+shader.uniforms.colour = 1
 
-vertex_list = pyglet.graphics.vertex_list(4,
-                                          ('v2f', (-a, 0,
-                                                   0, a,
-                                                   a, 0,
-                                                   0, -a)),
-                                          )
-
-color_map = {
-    key._1: (1, 0, 0),
-    key._2: (0, 1, 0),
-    key._3: (0, 0, 1),
-}
-
-
-@window.event
-def on_draw():
-    window.clear()
-    vertex_list.draw(GL_POLYGON)
-
-
-@window.event
-def on_key_press(symbol, modifiers):
-    try:
-        shader.uniforms.color = color_map[symbol]
-    except KeyError:
-        pass
-
+colour_map = {getattr(key, f"_{i}"): (i + 1) / 10 for i in range(10)}
 
 if __name__ == '__main__':
     pyglet.app.run()
